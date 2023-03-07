@@ -1,0 +1,202 @@
+const axios = require('axios');
+const csv = require('csv-parser');
+const fs = require('fs');
+const http = require('http');
+const url = require('url');
+const qs = require('querystring');
+const cors = require('cors');
+const winston = require('winston');
+const util = require('util');
+const csvtojson = require('csvtojson');
+
+const csvData = [];
+
+const csvFilePath = 'taesa.csv';
+
+fs.createReadStream(csvFilePath)
+  .pipe(csv())
+  .on('data', (row) => {
+    csvData.push(row);
+  })
+  .on('end', () => {
+    console.log(csvData); // Exibir a matriz com os valores do CSV
+  });
+
+const app = http.createServer(async (request, response) => {
+  const { pathname, query: params } = url.parse(request.url, true);
+
+  response.setHeader('Access-Control-Allow-Origin', '*');
+
+  if (pathname === '/ask' && params.question) {
+    try {
+      const answer = await askQuestion(params.question);
+   const responseText = `Resposta: ${answer} Score de confiança: ${avgLogprob}`;
+    response.end(responseText);    } catch (error) {
+      console.log(error);
+      response.statusCode = 500;
+      response.end("Não foi possível obter a resposta.");
+    }
+  } else {
+    response.statusCode = 404;
+    response.end();
+  }
+});
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  defaultMeta: { service: 'user-service' },
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.simple(),
+    }),
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+  ],
+});
+
+const readCSV = util.promisify(csvtojson().fromFile);
+
+async function getCSVData(filePath) {
+  return readCSV(filePath);
+}
+
+
+const OPENAI_API_KEY = "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"
+
+const prompt = "Responda à pergunta com a maior sinceridade possível de forma educada usando o texto fornecido e o arquivo csv, se a resposta não estiver contida no texto abaixo, diga 'Não sei'.";
+const context = ""
+
+
+async function askQuestion(question) {
+  try {
+    const data = await csvtojson().fromFile('taesa.csv');
+
+    const item = data
+  .filter(({ title, heading, content }) => {
+    const words = [title, heading, content].map(text => text.toLowerCase().split(' '));
+    const questionWords = question.toLowerCase().split(' ');
+    const numMatches = words.reduce((sum, words) => {
+      return sum + words.filter(word => questionWords.includes(word)).length;
+    }, 0);
+    return numMatches > 0;
+  })
+  .sort((a, b) => {
+    const wordsA = [a.title, a.heading, a.content].map(text => text.toLowerCase().split(' '));
+    const wordsB = [b.title, b.heading, b.content].map(text => text.toLowerCase().split(' '));
+    const questionWords = question.toLowerCase().split(' ');
+    const numMatchesA = wordsA.reduce((sum, words) => {
+      return sum + words.filter(word => questionWords.includes(word)).length;
+    }, 0);
+    const numMatchesB = wordsB.reduce((sum, words) => {
+      return sum + words.filter(word => questionWords.includes(word)).length;
+    }, 0);
+    return numMatchesB - numMatchesA;
+  })
+  .shift();
+
+  let avgLogprob = 0;
+
+    if (item) {
+      const content = item.content.trim();
+      const response = await axios.post('https://api.openai.com/v1/engines/text-davinci-003/completions', {
+        prompt: `${prompt}\n${context}\n${content}\nQ: ${question}\nA:`,
+        max_tokens: 2048,
+        n: 1,
+        temperature: 0.5,
+        frequency_penalty: 0.5,
+        presence_penalty: 0.5,
+        logprobs: 10,
+        stop: ""
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        }
+      });
+      const answer = response.data.choices[0].text.trim();
+      const logprobs = response.data.choices[0].logprobs.token_logprobs;
+      const avgLogprob = logprobs.reduce((a, b) => a + b) / logprobs.length;
+      logger.info(`Resposta: ${answer}, score de confiança: ${avgLogprob}`);
+      if (answer.toLowerCase() === "não sei") {
+        return "Não sei.";
+      }
+      return answer;
+    } else {
+      logger.error("Erro ao chamar API de resposta");
+      return "Desculpe, ocorreu um erro ao tentar obter uma resposta.";
+    }
+  } catch (error) {
+    logger.error(`Erro ao chamar API de resposta: ${error}`);
+    return "Desculpe, ocorreu um erro ao tentar obter uma resposta.";
+  }
+}
+
+app.listen(3000, () => {
+  console.log('Servidor iniciado na porta 3000');
+});
+
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Exemplo de Perguntas e Respostas com OpenAI</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <form id="question-form">
+    <input type="text" id="question-input" name="question">
+    <button type="submit">Enviar</button>
+  </form>
+
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+    const form = document.getElementById("question-form");
+    const input = document.getElementById("question-input");
+
+    const OPENAI_API_KEY = "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"
+
+    const prompt = "Responda à pergunta com a maior sinceridade possível de forma educada usando o texto fornecido e o arquivo csv, se a resposta não estiver contida no texto abaixo, diga 'Não sei'.";
+    const context = ""
+    let lastHeading = null; // Inicialmente não há um último heading
+
+    async function askQuestion(question) {
+      return new Promise((resolve, reject) => {
+        axios.get(`http://localhost:3000/ask?question=${question}`)
+          .then(response => {
+            const { answer, confidence } = response.data;
+            resolve({ answer, confidence });
+          })
+          .catch(error => {
+            console.log(error);
+            reject("Não foi possível obter a resposta.");
+          });
+      });
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault(); // impede o envio do formulário
+
+      const question = input.value; // obtém a pergunta digitada pelo usuário
+
+      try {
+        const { answer, confidence } = await askQuestion(question);
+
+        const answerElement = document.createElement("p");
+        answerElement.textContent = `Resposta: ${answer}`;
+        document.body.appendChild(answerElement);
+
+        const confidenceElement = document.createElement("p");
+        confidenceElement.textContent = `Score de confiança: ${confidence}`;
+        document.body.appendChild(confidenceElement);
+      } catch (error) {
+        console.log(error);
+        alert("Não foi possível obter a resposta.");
+      }
+    });
+  </script>
+</body>
+
+</html>

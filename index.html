@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Respostas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="body">
+    <h1>Respostas</h1>
+    <form onsubmit="return askQuestion(event)">
+      <label for="question">Faça sua pergunta:</label>
+      <input type="text" id="question" name="question" />
+      <button type="submit">Enviar</button>
+    </form>
+    <div id="answer"></div>
+    <p id="confidence-score"></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    const answerDiv = document.getElementById('answer');
+    const confidenceScore = document.getElementById('confidence-score');
+
+    async function askQuestion(event) {
+      event.preventDefault();
+      const question = document.getElementById('question').value;
+
+      try {
+        const response = await axios.get(`http://localhost:3000/ask?question=${question}`);
+        const answer = response.data;
+        const confidenceScore = response.data;
+
+        answerDiv.textContent = `Resposta: ${answer}`;
+        confidenceScore.textContent = `Confidence Score: ${confidenceScore}`;
+      } catch (error) {
+        console.log(error);
+        answerDiv.textContent = 'Não foi possível obter a resposta.';
+      }
+    }
+  </script>
+</body>
+
+</html>
