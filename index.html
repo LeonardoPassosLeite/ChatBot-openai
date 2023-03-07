@@ -29,10 +29,10 @@
 
       try {
         const response = await axios.get(`http://localhost:3000/ask?question=${question}`);
-        const answer = response.data;
-        console.log(answer)
+        const result = response.data;
+        console.log(result)
 
-        answerDiv.textContent = `Resposta: ${answer.answer} Score:${answer.avgLogprob}`;
+        answerDiv.textContent = `Resposta: ${result.answer} Score Confiança: ${result.avgLogprob}`;
         console.log(answerDiv)
 
 

@@ -98,3 +98,13 @@
 {"level":"error","message":"Erro ao chamar API de resposta: AxiosError: Request failed with status code 401","service":"user-service"}
 {"level":"error","message":"Erro ao chamar API de resposta: AxiosError: Request failed with status code 401","service":"user-service"}
 {"level":"error","message":"Erro ao chamar API de resposta: ReferenceError: avgLogprob is not defined","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta: AxiosError: Request failed with status code 401","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta: AxiosError: Request failed with status code 401","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta: AxiosError: Request failed with status code 401","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta: AxiosError: Request failed with status code 401","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta","service":"user-service"}
+{"level":"error","message":"Erro ao chamar API de resposta","service":"user-service"}
