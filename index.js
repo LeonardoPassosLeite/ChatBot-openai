@@ -32,7 +32,8 @@ const app = http.createServer(async (request, response) => {
       console.log('Chamando a função askQuestion()');
       const answer = await askQuestion(params.question);
       const responseText = `${answer}`;
-      response.end(responseText);
+      console.log("Answer:", answer)
+      response.end(JSON.stringify(answer));
     } catch (error) {
       console.log(error);
       response.statusCode = 500;
@@ -64,7 +65,7 @@ async function getCSVData(filePath) {
 }
 
 
-const OPENAI_API_KEY = "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"
+const OPENAI_API_KEY = "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"
 
 const prompt = "Responda à pergunta com a maior sinceridade possível de forma educada usando o texto fornecido e o arquivo csv, se a resposta não estiver contida no texto abaixo, diga 'Não sei'.";
 const context = ""
@@ -106,13 +107,13 @@ async function askQuestion(question) {
 
         const answer = response.data.choices[0].text.trim();
         const logprobs = response.data.choices[0].logprobs.token_logprobs;
-        const avgLogprob = logprobs.reduce((a, b) => a + b) / logprobs.length;
+        const avgLogprob = logprobs.reduce((a, b) => a + b) / logprobs.length * (-1);
         console.log(`Resposta: ${answer}, confidence score: ${avgLogprob}`);
 
         if (answer.toLowerCase() === "não sei") {
           return "Não sei.";
         }
-        return answer;
+        return { answer, avgLogprob };
       }
     }
 

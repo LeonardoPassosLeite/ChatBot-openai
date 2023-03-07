@@ -22,7 +22,6 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
     const answerDiv = document.getElementById('answer');
-    const confidenceScore = document.getElementById('confidence-score');
 
     async function askQuestion(event) {
       event.preventDefault();
@@ -31,10 +30,12 @@
       try {
         const response = await axios.get(`http://localhost:3000/ask?question=${question}`);
         const answer = response.data;
-        const confidenceScore = response.data;
+        console.log(answer)
 
-        answerDiv.textContent = `Resposta: ${answer}`;
-        confidenceScore.textContent = `Confidence Score: ${confidenceScore}`;
+        answerDiv.textContent = `Resposta: ${answer.answer} Score:${answer.avgLogprob}`;
+        console.log(answerDiv)
+
+
       } catch (error) {
         console.log(error);
         answerDiv.textContent = 'Não foi possível obter a resposta.';
